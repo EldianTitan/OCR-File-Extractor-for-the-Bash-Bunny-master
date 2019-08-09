@@ -1,0 +1,113 @@
+<html>
+	<head>
+		<title>Base64 File Grabber</title>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<style type="text/css">
+			body { width: 100%; height: 100vh; margin: 0px; }
+			canvas { background: #F1F; height: 100%; width: 100%; }
+		</style>
+		
+		<script type="text/javascript">
+			function getParameter(parameterName, defaultValue) {
+				var items = window.location.search.substr(1).split("&");
+				
+				for(var i = 0; i < items.length; i++) {
+					var temp = items[i].split("=");
+					if(temp[0] == parameterName) return decodeURIComponent(temp[1]);
+				}
+
+				return defaultValue;
+			}
+
+			var fontSize = parseInt(getParameter("fontsize", 25));
+			var paddingY = parseInt(getParameter("paddingY", 0));
+			var paddingX = parseInt(getParameter("paddingX", 0));
+			
+			var marginTop = parseInt(getParameter("marginTop", 5));
+			var marginLeft = parseInt(getParameter("marginLeft", 10));
+			var marginBottom = parseInt(getParameter("marginBottom", 5));
+			var marginRight = parseInt(getParameter("marginRight", 10));
+			
+			var index = 0;
+			var time = parseInt(getParameter("frametime", 1000));
+			
+			function create(text) {	
+				var canvas = document.getElementById("drawCanvas");
+				var ctx = canvas.getContext("2d");
+
+				ctx.canvas.width  = window.innerWidth;
+				ctx.canvas.height = window.innerHeight;
+
+				ctx.font = fontSize + "px " +  getParameter("font", "Sans-Serif");
+
+				setInterval(function() { displayPage(ctx, text); }, time);
+			}
+			
+			function displayPage(ctx, text) {
+				var fontParam = getParameter("font", "Sans-Serif");
+
+				ctx.fillStyle = getParameter("bgcolor", "#F1F");
+				ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+				
+				var carretX = marginLeft;
+				var carretY = marginTop + fontSize;
+
+				while(index < text.length && carretY < window.innerHeight - marginBottom) {
+					ctx.fillStyle = getParameter("fgcolor", "#000");
+					ctx.font = fontSize + "px " + fontParam;
+
+					while(index < text.length) {
+						var additionalWidth = ctx.measureText(text.charAt(index)).width + paddingX;
+						if((carretX + additionalWidth) > window.innerWidth - marginRight) break;
+
+
+						ctx.fillText(text.charAt(index), carretX, carretY);
+
+						carretX += additionalWidth;
+						index++;
+					}
+
+					carretX = marginLeft;
+					carretY += fontSize + paddingY;
+				}
+				
+				if(index >= text.length) {
+					return;
+				}
+			}
+			
+			function handleFileSelect(evt) {
+				var file = evt.target.files[0];
+
+				var reader = new FileReader();
+				reader.onload = (function(theFile) {
+					return function(e) {
+						setTimeout(function() { create(e.target.result); }, parseInt(getParameter("waittime", 3000)));
+					};
+				})(file);
+
+				reader.readAsDataURL(file);
+
+				var elem = document.getElementById("fileselect");
+				elem.parentNode.removeChild(elem);
+			}
+			
+			function notifyReady() {
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.onreadystatechange = function() { };
+				xmlHttp.open("GET", "./loaded.html", true);
+				xmlHttp.send(null);
+			}
+		</script>
+	</head>
+	<body>
+		<input type="file" id="fileselect" name="files[]" onselecet="alert('Selected File!')"/> 
+		<canvas id="drawCanvas" width="1000" height="1000">Oops! Your browser does not support the canvas element!</canvas>
+	</body>
+	<script type="text/javascript">
+		document.getElementById("fileselect").addEventListener("change", handleFileSelect, false);
+		notifyReady();
+	</script>
+</html>

